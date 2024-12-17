@@ -13,7 +13,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
-import org.yaml.snakeyaml.events.Event;
 
 @Service
 public class ProductService {
@@ -22,8 +21,8 @@ public class ProductService {
     private ProductRepository repository;
 
     @Transactional(readOnly = true)
-    public Page<ProductDTO> findAll(Pageable pageable) {
-        return repository.findAll(pageable).map(e -> new ProductDTO(e));
+    public Page<ProductDTO> findAll(String name, Pageable pageable) {
+        return repository.searchByName(name, pageable).map(e -> new ProductDTO(e));
     }
 
     @Transactional(readOnly = true)

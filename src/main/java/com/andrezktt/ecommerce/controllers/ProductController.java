@@ -1,6 +1,7 @@
 package com.andrezktt.ecommerce.controllers;
 
 import com.andrezktt.ecommerce.dto.ProductDTO;
+import com.andrezktt.ecommerce.entities.Product;
 import com.andrezktt.ecommerce.services.ProductService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,8 +21,8 @@ public class ProductController {
     private ProductService service;
 
     @GetMapping
-    public ResponseEntity<Page<ProductDTO>> findAll(Pageable pageable) {
-        return ResponseEntity.ok(service.findAll(pageable));
+    public ResponseEntity<Page<ProductDTO>> findAll(@RequestParam String name, Pageable pageable) {
+        return ResponseEntity.ok(service.findAll(name, pageable));
     }
 
     @GetMapping(value = "/{id}")
