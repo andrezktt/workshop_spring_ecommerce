@@ -1,6 +1,7 @@
 package com.andrezktt.ecommerce.controllers;
 
 import com.andrezktt.ecommerce.dto.ProductDTO;
+import com.andrezktt.ecommerce.dto.ProductMinDTO;
 import com.andrezktt.ecommerce.entities.Product;
 import com.andrezktt.ecommerce.services.ProductService;
 import jakarta.validation.Valid;
@@ -22,7 +23,7 @@ public class ProductController {
     private ProductService service;
 
     @GetMapping
-    public ResponseEntity<Page<ProductDTO>> findAll(@RequestParam String name, Pageable pageable) {
+    public ResponseEntity<Page<ProductMinDTO>> findAll(@RequestParam String name, Pageable pageable) {
         return ResponseEntity.ok(service.findAll(name, pageable));
     }
 

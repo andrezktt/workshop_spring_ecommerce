@@ -1,6 +1,7 @@
 package com.andrezktt.ecommerce.services;
 
 import com.andrezktt.ecommerce.dto.ProductDTO;
+import com.andrezktt.ecommerce.dto.ProductMinDTO;
 import com.andrezktt.ecommerce.entities.Product;
 import com.andrezktt.ecommerce.repositories.ProductRepository;
 import com.andrezktt.ecommerce.services.exceptions.DatabaseException;
@@ -21,8 +22,8 @@ public class ProductService {
     private ProductRepository repository;
 
     @Transactional(readOnly = true)
-    public Page<ProductDTO> findAll(String name, Pageable pageable) {
-        return repository.searchByName(name, pageable).map(e -> new ProductDTO(e));
+    public Page<ProductMinDTO> findAll(String name, Pageable pageable) {
+        return repository.searchByName(name, pageable).map(e -> new ProductMinDTO(e));
     }
 
     @Transactional(readOnly = true)
