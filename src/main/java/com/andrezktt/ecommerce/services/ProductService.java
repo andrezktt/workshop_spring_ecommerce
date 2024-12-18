@@ -1,7 +1,9 @@
 package com.andrezktt.ecommerce.services;
 
+import com.andrezktt.ecommerce.dto.CategoryDTO;
 import com.andrezktt.ecommerce.dto.ProductDTO;
 import com.andrezktt.ecommerce.dto.ProductMinDTO;
+import com.andrezktt.ecommerce.entities.Category;
 import com.andrezktt.ecommerce.entities.Product;
 import com.andrezktt.ecommerce.repositories.ProductRepository;
 import com.andrezktt.ecommerce.services.exceptions.DatabaseException;
@@ -68,5 +70,11 @@ public class ProductService {
         entity.setDescription(dto.getDescription());
         entity.setPrice(dto.getPrice());
         entity.setImgUrl(dto.getImgUrl());
+        entity.getCategories().clear();
+        for (CategoryDTO categoryDTO : dto.getCategories()) {
+            Category category = new Category();
+            category.setId(categoryDTO.getId());
+            entity.getCategories().add(category);
+        }
     }
 }
