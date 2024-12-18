@@ -4,9 +4,11 @@ import com.andrezktt.ecommerce.entities.User;
 import com.andrezktt.ecommerce.projections.UserDetailsProjection;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
+@Repository
 public interface UserRepository extends JpaRepository<User, Long> {
 
     @Query(nativeQuery = true, value = """
@@ -17,5 +19,4 @@ public interface UserRepository extends JpaRepository<User, Long> {
 			WHERE tb_user.email = :email
 		""")
     List<UserDetailsProjection> searchUserAndRolesByEmail(String email);
-
 }
