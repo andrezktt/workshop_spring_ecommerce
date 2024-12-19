@@ -3,6 +3,7 @@ package com.andrezktt.ecommerce.controllers.handlers;
 import com.andrezktt.ecommerce.dto.CustomError;
 import com.andrezktt.ecommerce.dto.ValidationError;
 import com.andrezktt.ecommerce.services.exceptions.DatabaseException;
+import com.andrezktt.ecommerce.services.exceptions.ForbiddenException;
 import com.andrezktt.ecommerce.services.exceptions.ResourceNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
@@ -38,6 +39,13 @@ public class ControllerExceptionHandler {
         for (FieldError f : e.getBindingResult().getFieldErrors()) {
             err.addErrors(f.getField(), f.getDefaultMessage());
         }
+        return ResponseEntity.status(status).body(err);
+    }
+
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<CustomError> forbidden(ForbiddenException e, HttpServletRequest request) {
+        HttpStatus status = HttpStatus.FORBIDDEN;
+        CustomError err = new CustomError(Instant.now(), status.value(), e.getMessage(), request.getRequestURI());
         return ResponseEntity.status(status).body(err);
     }
 
