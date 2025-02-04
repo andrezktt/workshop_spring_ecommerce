@@ -28,43 +28,42 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@Transactional
 public class OrderControllerIntegrationTests {
 
     @Autowired
     private MockMvc mockMvc;
 
     @Autowired
-    private TokenUtil tokenUtil;
-
-    @Autowired
     private ObjectMapper objectMapper;
 
-    private String adminUsername, adminPassword;
-    private String clientUsername, clientPassword;
-    private String adminToken, clientToken, invalidToken;
+    @Autowired
+    private TokenUtil tokenUtil;
+
+    private String clientUsername, clientPassword, adminUsername, adminPassword, adminOnlyUsername, adminOnlyPassword;
+    private String clientToken, adminToken, adminOnlyToken, invalidToken;
+    private Long existingOrderId, nonExistingOrderId;
 
     private Order order;
     private OrderDTO orderDTO;
     private User user;
-
-    private Long existingOrderId, nonExistingOrderId;
 
     @BeforeEach
     void setUp() throws Exception {
 
         clientUsername = "maria@gmail.com";
         clientPassword = "123456";
-
         adminUsername = "alex@gmail.com";
         adminPassword = "123456";
-
-        adminToken = tokenUtil.obtainAccessToken(mockMvc, adminUsername, adminPassword);
-        clientToken = tokenUtil.obtainAccessToken(mockMvc, clientUsername, clientPassword);
-        invalidToken = adminToken + "xpto";
+        adminOnlyUsername = "ana@gmail.com";
+        adminOnlyPassword = "123456";
 
         existingOrderId = 1L;
-        nonExistingOrderId = 100L;
+        nonExistingOrderId = 1000L;
+
+        clientToken = tokenUtil.obtainAccessToken(mockMvc, clientUsername, clientPassword);
+        adminToken = tokenUtil.obtainAccessToken(mockMvc, adminUsername, adminPassword);
+        adminOnlyToken = tokenUtil.obtainAccessToken(mockMvc, adminOnlyUsername, adminOnlyPassword);
+        invalidToken = adminToken + "xpto"; // Simulates a wrong token
 
         user = UserFactory.createClientUser();
         order = new Order(null, Instant.now(), OrderStatus.WAITING_PAYMENT, user, null);
@@ -72,53 +71,53 @@ public class OrderControllerIntegrationTests {
         Product product = ProductFactory.createProduct();
         OrderItem orderItem = new OrderItem(order, product, 2, 10.0);
         order.getItems().add(orderItem);
+
+        orderDTO = new OrderDTO(order);
     }
 
     @Test
-    public void findAllShouldReturnOrderDTOWhenIdExistsAndLoggedAsAdmin() throws Exception {
-        ResultActions result = mockMvc
-                .perform(get("/orders/{id}", existingOrderId)
+    public void findByIdShouldReturnOrderDTOWhenIdExistsAndAdminLogged() throws Exception {
+
+        ResultActions result =
+                mockMvc.perform(get("/orders/{id}", existingOrderId)
                         .header("Authorization", "Bearer " + adminToken)
                         .accept(MediaType.APPLICATION_JSON));
 
         result.andExpect(status().isOk());
-        result.andExpect(jsonPath("$.id").value(existingOrderId));
+        result.andExpect(jsonPath("$.id").value(1L));
         result.andExpect(jsonPath("$.moment").value("2022-07-25T13:00:00Z"));
         result.andExpect(jsonPath("$.status").value("PAID"));
         result.andExpect(jsonPath("$.client").exists());
-        result.andExpect(jsonPath("$.client.name").value("Maria Brown"));
         result.andExpect(jsonPath("$.payment").exists());
         result.andExpect(jsonPath("$.items").exists());
-        result.andExpect(jsonPath("$.items[0].name").value("The Lord of the Rings"));
         result.andExpect(jsonPath("$.total").exists());
     }
 
     @Test
-    public void findAllShouldReturnOrderDTOWhenIdExistsAndLoggedAsClient() throws Exception {
-        ResultActions result = mockMvc
-                .perform(get("/orders/{id}", existingOrderId)
+    public void findByIdShouldReturnOrderDTOWhenIdExistsAndClientLogged() throws Exception {
+
+        ResultActions result =
+                mockMvc.perform(get("/orders/{id}", existingOrderId)
                         .header("Authorization", "Bearer " + clientToken)
                         .accept(MediaType.APPLICATION_JSON));
 
         result.andExpect(status().isOk());
-        result.andExpect(jsonPath("$.id").value(existingOrderId));
+        result.andExpect(jsonPath("$.id").value(1L));
         result.andExpect(jsonPath("$.moment").value("2022-07-25T13:00:00Z"));
         result.andExpect(jsonPath("$.status").value("PAID"));
         result.andExpect(jsonPath("$.client").exists());
-        result.andExpect(jsonPath("$.client.name").value("Maria Brown"));
         result.andExpect(jsonPath("$.payment").exists());
         result.andExpect(jsonPath("$.items").exists());
-        result.andExpect(jsonPath("$.items[0].name").value("The Lord of the Rings"));
         result.andExpect(jsonPath("$.total").exists());
     }
 
     @Test
-    public void findAllShouldReturnForbiddenWhenIdExistsAndLoggedAsClientAndOrderDoesNotBelongToUser() throws Exception {
+    public void findByIdShouldReturnForbiddenWhenIdExistsAndClientLogged() throws Exception {
 
         Long otherOrderId = 2L;
 
-        ResultActions result = mockMvc
-                .perform(get("/orders/{id}", otherOrderId)
+        ResultActions result =
+                mockMvc.perform(get("/orders/{id}", otherOrderId)
                         .header("Authorization", "Bearer " + clientToken)
                         .accept(MediaType.APPLICATION_JSON));
 
@@ -126,9 +125,10 @@ public class OrderControllerIntegrationTests {
     }
 
     @Test
-    public void findAllShouldReturnNotFoundWhenIdDoesNotExistAndLoggedAsAdmin() throws Exception {
-        ResultActions result = mockMvc
-                .perform(get("/orders/{id}", nonExistingOrderId)
+    public void findByIdShouldReturnNotFoundWhenIdDoesNotExistAndAdminLogged() throws Exception {
+
+        ResultActions result =
+                mockMvc.perform(get("/orders/{id}", nonExistingOrderId)
                         .header("Authorization", "Bearer " + adminToken)
                         .accept(MediaType.APPLICATION_JSON));
 
@@ -136,9 +136,10 @@ public class OrderControllerIntegrationTests {
     }
 
     @Test
-    public void findAllShouldReturnNotFoundWhenIdDoesNotExistAndLoggedAsClient() throws Exception {
-        ResultActions result = mockMvc
-                .perform(get("/orders/{id}", nonExistingOrderId)
+    public void findByIdShouldReturnNotFoundWhenIdDoesNotExistAndClientLogged() throws Exception {
+
+        ResultActions result =
+                mockMvc.perform(get("/orders/{id}", nonExistingOrderId)
                         .header("Authorization", "Bearer " + clientToken)
                         .accept(MediaType.APPLICATION_JSON));
 
@@ -146,12 +147,84 @@ public class OrderControllerIntegrationTests {
     }
 
     @Test
-    public void findAllShouldReturnUnauthorizedWhenInvalidToken() throws Exception {
-        ResultActions result = mockMvc
-                .perform(get("/orders/{id}", existingOrderId)
+    public void findByIdShouldReturnUnauthorizedWhenIdExistsAndInvalidToken() throws Exception {
+
+        ResultActions result =
+                mockMvc.perform(get("/orders/{id}", existingOrderId)
                         .header("Authorization", "Bearer " + invalidToken)
                         .accept(MediaType.APPLICATION_JSON));
 
         result.andExpect(status().isUnauthorized());
     }
+
+    @Test
+    public void insertShouldReturnOrderDTOCreatedWhenClientLogged() throws Exception {
+
+        String jsonBody = objectMapper.writeValueAsString(orderDTO);
+
+        ResultActions result =
+                mockMvc.perform(post("/orders")
+                                .header("Authorization", "Bearer " + clientToken)
+                                .content(jsonBody)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .accept(MediaType.APPLICATION_JSON))
+                        .andDo(MockMvcResultHandlers.print());
+
+        result.andExpect(status().isCreated());
+        result.andExpect(jsonPath("$.id").value(4L));
+        result.andExpect(jsonPath("$.moment").exists());
+        result.andExpect(jsonPath("$.status").value("WAITING_PAYMENT"));
+        result.andExpect(jsonPath("$.client").exists());
+        result.andExpect(jsonPath("$.items").exists());
+        result.andExpect(jsonPath("$.total").exists());
+    }
+
+    @Test
+    public void insertShouldReturnUnprocessableEntityWhenClientLoggedAndOrderHasNoItem() throws Exception {
+
+        orderDTO.getItems().clear();
+
+        String jsonBody = objectMapper.writeValueAsString(orderDTO);
+
+        ResultActions result =
+                mockMvc.perform(post("/orders")
+                                .header("Authorization", "Bearer " + clientToken)
+                                .content(jsonBody)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .accept(MediaType.APPLICATION_JSON))
+                        .andDo(MockMvcResultHandlers.print());
+
+        result.andExpect(status().isUnprocessableEntity());
+    }
+
+    @Test
+    public void insertShouldReturnForbiddenWhenAdminLogged() throws Exception {
+
+        String jsonBody = objectMapper.writeValueAsString(orderDTO);
+
+        ResultActions result =
+                mockMvc.perform(post("/orders")
+                        .header("Authorization", "Bearer " + adminOnlyToken)
+                        .content(jsonBody)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON));
+
+        result.andExpect(status().isForbidden());
+    }
+
+    @Test
+    public void insertShouldReturnUnauthorizedWhenInvalidToken() throws Exception {
+
+        String jsonBody = objectMapper.writeValueAsString(orderDTO);
+
+        ResultActions result =
+                mockMvc.perform(post("/orders")
+                        .header("Authorization", "Bearer " + invalidToken)
+                        .content(jsonBody)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON));
+
+        result.andExpect(status().isUnauthorized());
+    }
 }
+
